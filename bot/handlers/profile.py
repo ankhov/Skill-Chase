@@ -73,6 +73,21 @@ def register_handlers(application):
             SKILLS: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_skills)],
             INTERESTS: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_interests)],
         },
-        fallbacks=[CallbackQueryHandler(profile, pattern="back")]
+        fallbacks=[]
     )
     application.add_handler(conv_handler)
+
+    application.add_handler(CallbackQueryHandler(back_to_main_menu, pattern="back"))
+
+
+async def back_to_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    user = update.effective_user
+    welcome_text = (
+        f"Привет, {user.first_name}! 👋\n"
+        "Я бот для поиска проектов, хакатонов, задач и людей для совместной работы.\n"
+        "Что хочешь сделать?"
+    )
+    await query.answer()
+    await query.message.edit_text(welcome_text, reply_markup=create_main_menu())
+    return ConversationHandler.END

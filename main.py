@@ -1,4 +1,6 @@
-from telegram.ext import Application
+from telegram.ext import Application, CallbackQueryHandler
+
+from bot.handlers.profile import back_to_main_menu
 from config import BOT_TOKEN
 from bot.handlers import start, search, create, profile
 
@@ -11,6 +13,8 @@ def main():
     search.register_handlers(application)
     create.register_handlers(application)
     profile.register_handlers(application)
+
+    application.add_handler(CallbackQueryHandler(back_to_main_menu, pattern="back"))
 
     # Запуск бота
     application.run_polling(allowed_updates=["message", "callback_query"])
