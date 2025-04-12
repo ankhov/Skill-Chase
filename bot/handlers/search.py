@@ -81,7 +81,8 @@ async def search_people(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text = (
             f"@{user.username}\n"
             f"Навыки: {user.skills or 'не указаны'}\n"
-            f"Интересы: {user.interests or 'не указаны'}"
+            f"Интересы: {user.interests or 'не указаны'}\n"
+            f"GitHub: {user.github or 'не указан'}"
         )
         await query.message.chat.send_message(text)
 
