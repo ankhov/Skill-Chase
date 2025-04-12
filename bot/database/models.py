@@ -19,6 +19,7 @@ class User(Base):
     username = Column(String, nullable=True)
     skills = Column(Text, nullable=True)
     interests = Column(Text, nullable=True)
+    github = Column(String, nullable=True)  # Добавлено поле github
 
 class Item(Base):
     __tablename__ = "items"

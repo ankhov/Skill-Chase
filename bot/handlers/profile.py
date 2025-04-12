@@ -4,7 +4,7 @@ from bot.database.models import User
 from bot.database.db import get_session
 from bot.utils.helpers import create_main_menu
 
-SKILLS, INTERESTS = range(2)
+SKILLS, INTERESTS, GITHUB = range(3)
 
 
 async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -18,11 +18,13 @@ async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
     profile_text = (
         f"Профиль @{db_user.username}\n"
         f"Навыки: {db_user.skills or 'Не указаны'}\n"
-        f"Интересы: {db_user.interests or 'Не указаны'}"
+        f"Интересы: {db_user.interests or 'Не указаны'}\n"
+        f"GitHub: {db_user.github or 'Не указан'}"
     )
     keyboard = [
         [InlineKeyboardButton("Изменить навыки", callback_data="edit_skills")],
         [InlineKeyboardButton("Изменить интересы", callback_data="edit_interests")],
+        [InlineKeyboardButton("Изменить GitHub", callback_data="edit_github")],
         [InlineKeyboardButton("Назад", callback_data="back")]
     ]
     await query.message.edit_text(profile_text, reply_markup=InlineKeyboardMarkup(keyboard))
@@ -35,7 +37,9 @@ async def edit_skills(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def edit_interests(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.callback_query.message.edit_text("Введи свои интересы:")
     return INTERESTS
-
+async def edit_github(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.callback_query.message.edit_text("Введи свой GitHub (например, https://github.com/username):")
+    return GITHUB
 
 async def save_skills(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
@@ -61,17 +65,28 @@ async def save_interests(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 
+async def save_github(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    github = update.message.text
+    with get_session() as session:
+        db_user = session.query(User).filter_by(telegram_id=user.id).first()
+        db_user.github = github
+        session.commit()
 
+    await update.message.reply_text("GitHub обновлён!", reply_markup=create_main_menu())
+    return ConversationHandler.END
 def register_handlers(application):
     conv_handler = ConversationHandler(
         entry_points=[
             CallbackQueryHandler(profile, pattern="profile"),
             CallbackQueryHandler(edit_skills, pattern="edit_skills"),
-            CallbackQueryHandler(edit_interests, pattern="edit_interests")
+            CallbackQueryHandler(edit_interests, pattern="edit_interests"),
+            CallbackQueryHandler(edit_github, pattern="edit_github")
         ],
         states={
             SKILLS: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_skills)],
             INTERESTS: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_interests)],
+            GITHUB: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_github)],
         },
         fallbacks=[]
     )
