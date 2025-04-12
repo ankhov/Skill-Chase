@@ -32,6 +32,10 @@ async def edit_skills(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.callback_query.message.edit_text("Введи свои навыки:")
     return SKILLS
 
+async def edit_interests(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.callback_query.message.edit_text("Введи свои интересы:")
+    return INTERESTS
+
 
 async def save_skills(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
@@ -45,11 +49,6 @@ async def save_skills(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 
-async def edit_interests(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.callback_query.message.edit_text("Введи свои интересы:")
-    return INTERESTS
-
-
 async def save_interests(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     interests = update.message.text
@@ -60,6 +59,7 @@ async def save_interests(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text("Интересы обновлены!", reply_markup=create_main_menu())
     return ConversationHandler.END
+
 
 
 def register_handlers(application):
