@@ -5,7 +5,7 @@ from bot.database.models import Item, ItemType, User
 from bot.database.db import get_session
 from bot.utils.helpers import create_main_menu
 
-TITLE, DESCRIPTION, TYPE = range(3)
+TITLE, DESCRIPTION, TYPE, FIELD = range(4)
 
 
 async def create_item(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -37,10 +37,19 @@ async def set_title(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def set_description(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data["description"] = update.message.text
+    await update.message.reply_text("Введи область деятельности для этой темы (например, ИИ, дизайн, финтех и т.д.):")
+    return FIELD
+
+
+async def set_field(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-    description = update.message.text
-    item_type = context.user_data["type"]
+    field = update.message.text
+    context.user_data["field"] = field
+
     title = context.user_data["title"]
+    description = context.user_data["description"]
+    item_type = context.user_data["type"]
 
     with get_session() as session:
         db_user = session.query(User).filter_by(telegram_id=user.id).first()
@@ -48,6 +57,7 @@ async def set_description(update: Update, context: ContextTypes.DEFAULT_TYPE):
             type=ItemType[item_type.upper()],
             title=title,
             description=description,
+            field=field,
             creator_id=db_user.id
         )
         session.add(new_item)
@@ -60,6 +70,7 @@ async def set_description(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 
+
 def register_handlers(application):
     conv_handler = ConversationHandler(
         entry_points=[CallbackQueryHandler(create_item, pattern="create_item")],
@@ -67,6 +78,7 @@ def register_handlers(application):
             TYPE: [CallbackQueryHandler(set_type, pattern="type_(project|hackathon|task|case_championship|olymp)")],
             TITLE: [MessageHandler(filters.TEXT & ~filters.COMMAND, set_title)],
             DESCRIPTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, set_description)],
+            FIELD: [MessageHandler(filters.TEXT & ~filters.COMMAND, set_field)],
         },
         fallbacks=[]
     )
