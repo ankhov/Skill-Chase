@@ -64,7 +64,7 @@ def register_handlers(application):
     conv_handler = ConversationHandler(
         entry_points=[CallbackQueryHandler(create_item, pattern="create_item")],
         states={
-            TYPE: [CallbackQueryHandler(set_type, pattern="type_(project|hackathon|task)")],
+            TYPE: [CallbackQueryHandler(set_type, pattern="type_(project|hackathon|task|case_championship|olymp)")],
             TITLE: [MessageHandler(filters.TEXT & ~filters.COMMAND, set_title)],
             DESCRIPTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, set_description)],
         },

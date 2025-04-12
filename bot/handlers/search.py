@@ -38,14 +38,29 @@ async def search_by_type(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.message.edit_text("Ничего не найдено.", reply_markup=create_main_menu())
         return
 
-    response = f"Найдено ({ITEM_TYPES.get(item_type, item_type)}):\n\n"
+    await query.message.delete()  # Удаляем сообщение с кнопками выбора типа
+
     for item in items:
         username = f"@{item.creator.username}" if item.creator and item.creator.username else "Без имени"
-        response += f"{item.title}\n{item.description}\nСоздатель: {username}\n\n"
+        text = f"📌 <b>{item.title}</b>\n\n{item.description}\n\n👤 Создатель: {username}"
+        await context.bot.send_message(
+            chat_id=query.message.chat.id,
+            text=text,
+            parse_mode="HTML"
+        )
 
-    await query.message.edit_text(response, reply_markup=create_main_menu())
+    user = update.effective_user
+    welcome_text = (
+        f"Привет, {user.first_name}! 👋\n"
+        "Я бот для поиска проектов, хакатонов, задач и людей для совместной работы.\n"
+        "Что хочешь сделать?"
+    )
 
-
+    await context.bot.send_message(
+        chat_id=query.message.chat.id,
+        text=welcome_text,
+        reply_markup=create_main_menu()
+    )
 
 async def search_people(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -60,16 +75,31 @@ async def search_people(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.message.edit_text("Никто не найден.")
         return
 
-    text = "Пользователи:\n\n"
-    for user in users:
-        text += f"@{user.username}\n"
-        text += f"Навыки: {user.skills or 'не указаны'}\n"
-        text += f"Интересы: {user.interests or 'не указаны'}\n\n"
+    await query.message.delete()
 
-    await query.message.edit_text(text, reply_markup=create_main_menu())
+    for user in users:
+        text = (
+            f"@{user.username}\n"
+            f"Навыки: {user.skills or 'не указаны'}\n"
+            f"Интересы: {user.interests or 'не указаны'}"
+        )
+        await query.message.chat.send_message(text)
+
+    user = update.effective_user
+    welcome_text = (
+        f"Привет, {user.first_name}! 👋\n"
+        "Я бот для поиска проектов, хакатонов, задач и людей для совместной работы.\n"
+        "Что хочешь сделать?"
+    )
+
+    await context.bot.send_message(
+        chat_id=query.message.chat.id,
+        text=welcome_text,
+        reply_markup=create_main_menu()
+    )
 
 
 def register_handlers(application):
     application.add_handler(CallbackQueryHandler(search_item, pattern="search_item"))
-    application.add_handler(CallbackQueryHandler(search_by_type, pattern="search_(project|hackathon|task)"))
+    application.add_handler(CallbackQueryHandler(search_by_type, pattern="search_(project|hackathon|task|case_championship|olymp)"))
     application.add_handler(CallbackQueryHandler(search_people, pattern="search_people"))

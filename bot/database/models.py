@@ -9,6 +9,8 @@ class ItemType(enum.Enum):
     PROJECT = "project"
     HACKATHON = "hackathon"
     TASK = "task"
+    CASE_CHAMPIONSHIP = "case_championship"
+    OLYMP = "olymp"
 
 class User(Base):
     __tablename__ = "users"
