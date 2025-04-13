@@ -1,6 +1,4 @@
-from telegram import (
-    Update, InlineKeyboardButton, InlineKeyboardMarkup
-)
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, CallbackQueryHandler, ConversationHandler
 
 from sqlalchemy.orm import joinedload
@@ -19,7 +17,7 @@ def get_user_text(user: User) -> str:
         f"🌍 Область: {user.field or 'не указана'}\n"
         f"🛠️ Навыки: {user.skills or 'не указаны'}\n"
         f"🧾 О себе: {user.about or 'не заполнено'}\n"
-        f"💻 GitHub: {user.github or 'не указан'}"
+        f"💻 Репозиторий: {user.github or 'не указан'}"
     )
 
 
@@ -31,6 +29,7 @@ def get_item_text(item: Item) -> str:
         f"🌍 Область: {item.field or 'не указана'}\n"
         f"👤 Создатель: {username}"
     )
+
 
 def get_navigation_keyboard(prefix: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
@@ -87,8 +86,11 @@ async def show_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     index = context.user_data.get("user_index", 0)
     users = context.user_data.get("user_results", [])
-    user = users[index]
+    if not users or index >= len(users):
+        await context.bot.send_message(chat_id=chat_id, text="Никто не найден.")
+        return
 
+    user = users[index]
     text = get_user_text(user)
     if query:
         await query.message.delete()
@@ -105,6 +107,7 @@ async def show_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(
             chat_id=chat_id,
             text=text,
+            parse_mode="HTML",
             reply_markup=get_navigation_keyboard("user")
         )
 
@@ -163,8 +166,11 @@ async def show_item(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     index = context.user_data.get("item_index", 0)
     items = context.user_data.get("item_results", [])
-    item = items[index]
+    if not items or index >= len(items):
+        await context.bot.send_message(chat_id=chat_id, text="Ничего не найдено.")
+        return
 
+    item = items[index]
     text = get_item_text(item)
     if query:
         await query.message.delete()
@@ -191,7 +197,8 @@ async def handle_navigation(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     async def notify_end():
         try:
-            await query.message.edit_text("Ты просмотрел всех.")
+            await query.message.delete()
+            await context.bot.send_message(chat_id=query.message.chat.id, text="Ты просмотрел всех.")
         except:
             await context.bot.send_message(chat_id=query.from_user.id, text="Ты просмотрел всех.")
 
