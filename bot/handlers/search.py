@@ -5,13 +5,11 @@ from telegram.ext import ContextTypes, CallbackQueryHandler, ConversationHandler
 
 from sqlalchemy.orm import joinedload
 
-from bot.database.models import User, Item, ItemType
+from bot.database.models import User, Item, ItemType, FavoriteUser, FavoriteItem
 from bot.database.db import get_session
 from bot.utils.constants import ITEM_TYPES, MAIN_MENU, welcome_text
 from bot.utils.helpers import create_main_menu
 
-
-# -------- Вспомогательные функции -------- #
 
 def get_user_text(user: User) -> str:
     return (
@@ -31,6 +29,7 @@ def get_item_text(item: Item) -> str:
         f"🌍 Область: {item.field or 'не указана'}\n"
         f"👤 Создатель: {username}"
     )
+
 
 def get_navigation_keyboard(prefix: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
@@ -177,7 +176,7 @@ async def show_item(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
-# -------- Обработка лайков/навигации -------- #
+# -------- Обработка навигации и лайков -------- #
 
 async def handle_navigation(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -216,6 +215,13 @@ async def handle_navigation(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 text=f"❤️ Ты лайкнул @{user.username}!"
             )
 
+            with get_session() as session:
+                me = session.query(User).filter_by(telegram_id=query.from_user.id).first()
+                if me:
+                    fav = FavoriteUser(user_id=me.id, favorite_user_id=user.id)
+                    session.add(fav)
+                    session.commit()
+
             index += 1
 
         elif data in ["user_skip", "user_next"]:
@@ -252,6 +258,13 @@ async def handle_navigation(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 parse_mode="HTML"
             )
 
+            with get_session() as session:
+                me = session.query(User).filter_by(telegram_id=query.from_user.id).first()
+                if me:
+                    fav = FavoriteItem(user_id=me.id, item_id=item.id)
+                    session.add(fav)
+                    session.commit()
+
             index += 1
 
         elif data in ["item_skip", "item_next"]:
@@ -265,8 +278,6 @@ async def handle_navigation(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             await notify_end()
 
-
-# -------- Регистрация хендлеров -------- #
 
 def register_handlers(application):
     application.add_handler(CallbackQueryHandler(search_item, pattern="search_item"))

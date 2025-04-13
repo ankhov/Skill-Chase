@@ -3,7 +3,9 @@ MAIN_MENU = {
     "search_people": "👥 Найти людей",
     "create_item": "➕ Создать вакансию",
     "my_vacancies": "📂 Мои вакансии",
-    "profile": "👤 Мой профиль"
+    "profile": "👤 Мой профиль",
+    "show_fav_users": "⭐ Избранные пользователи",
+    "show_fav_items": "⭐ Избранные айтемы"
 }
 
 ITEM_TYPES = {
@@ -13,7 +15,6 @@ ITEM_TYPES = {
     "case_championship": "🏆 Кейс-чемпионат",
     "olymp": "🎓 Олимпиада"
 }
-
 
 welcome_text = (
     "Привет! 👋\n"
