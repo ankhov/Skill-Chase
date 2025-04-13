@@ -190,10 +190,17 @@ async def handle_navigation(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ConversationHandler.END
 
     async def notify_end():
+        markup = InlineKeyboardMarkup([
+            [InlineKeyboardButton("🏠 В меню", callback_data="back_to_menu")]
+        ])
         try:
-            await query.message.edit_text("Ты просмотрел всех.")
+            await query.message.edit_text("Ты просмотрел всех.", reply_markup=markup)
         except:
-            await context.bot.send_message(chat_id=query.from_user.id, text="Ты просмотрел всех.")
+            await context.bot.send_message(
+                chat_id=query.from_user.id,
+                text="Ты просмотрел всех.",
+                reply_markup=markup
+            )
 
     if data.startswith("user_"):
         results = context.user_data.get("user_results", [])
