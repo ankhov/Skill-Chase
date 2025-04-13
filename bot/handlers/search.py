@@ -1,24 +1,125 @@
-from sqlalchemy.orm import joinedload
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ContextTypes, CallbackQueryHandler
+from telegram import (
+    Update, InlineKeyboardButton, InlineKeyboardMarkup
+)
+from telegram.ext import ContextTypes, CallbackQueryHandler, ConversationHandler
 
-from bot.utils.constants import ITEM_TYPES, welcome_text, secondary_text
-from bot.database.models import Item, User, ItemType
+from sqlalchemy.orm import joinedload
+
+from bot.database.models import User, Item, ItemType
 from bot.database.db import get_session
+from bot.utils.constants import ITEM_TYPES, MAIN_MENU, welcome_text
 from bot.utils.helpers import create_main_menu
 
+
+# -------- Вспомогательные функции -------- #
+
+def get_user_text(user: User) -> str:
+    return (
+        f"👤 @{user.username}\n"
+        f"🌍 Область: {user.field or 'не указана'}\n"
+        f"🛠️ Навыки: {user.skills or 'не указаны'}\n"
+        f"🧾 О себе: {user.about or 'не заполнено'}\n"
+        f"💻 GitHub: {user.github or 'не указан'}"
+    )
+
+
+def get_item_text(item: Item) -> str:
+    username = f"@{item.creator.username}" if item.creator and item.creator.username else "Без имени"
+    return (
+        f"📌 <b>{item.title}</b>\n\n"
+        f"📝 Описание: {item.description}\n\n"
+        f"🌍 Область: {item.field or 'не указана'}\n"
+        f"👤 Создатель: {username}"
+    )
+
+def get_navigation_keyboard(prefix: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("❤️ Лайк", callback_data=f"{prefix}_like"),
+            InlineKeyboardButton("⏭️ Скип", callback_data=f"{prefix}_skip"),
+        ],
+        [
+            InlineKeyboardButton("⬅️ Назад", callback_data=f"{prefix}_prev"),
+            InlineKeyboardButton("➡️ Вперёд", callback_data=f"{prefix}_next")
+        ],
+        [
+            InlineKeyboardButton("🏠 В меню", callback_data="back_to_menu")
+        ]
+    ])
+
+
+# -------- Поиск пользователей -------- #
+
+async def search_people(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    user_id = query.from_user.id
+    with get_session() as session:
+        current_user = session.query(User).filter_by(telegram_id=user_id).first()
+        if not current_user or not current_user.field:
+            await query.message.edit_text("Сначала укажи свою область деятельности в профиле.")
+            return
+
+        user_fields = {f.strip().lower() for f in current_user.field.split(",")}
+        all_users = session.query(User).filter(
+            User.telegram_id != user_id,
+            (User.skills != None) | (User.about != None)
+        ).all()
+
+        matched = [
+            u for u in all_users
+            if u.field and user_fields & {f.strip().lower() for f in u.field.split(",")}
+        ]
+
+    if not matched:
+        await query.message.edit_text("Никто не найден.")
+        return
+
+    context.user_data["user_results"] = matched
+    context.user_data["user_index"] = 0
+    await show_user(update, context)
+
+
+async def show_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    chat_id = query.message.chat.id if query else update.effective_chat.id
+
+    index = context.user_data.get("user_index", 0)
+    users = context.user_data.get("user_results", [])
+    user = users[index]
+
+    text = get_user_text(user)
+    if query:
+        await query.message.delete()
+
+    if user.photo_file_id:
+        await context.bot.send_photo(
+            chat_id=chat_id,
+            photo=user.photo_file_id,
+            caption=text,
+            parse_mode="HTML",
+            reply_markup=get_navigation_keyboard("user")
+        )
+    else:
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=text,
+            reply_markup=get_navigation_keyboard("user")
+        )
+
+
+# -------- Поиск айтемов -------- #
 
 async def search_item(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-
     keyboard = [
         [InlineKeyboardButton(text, callback_data=f"search_{key}")]
         for key, text in ITEM_TYPES.items()
     ]
-    await query.message.edit_text(
-        "Выбери тип:", reply_markup=InlineKeyboardMarkup(keyboard)
-    )
+    keyboard.append([InlineKeyboardButton("🏠 В меню", callback_data="back_to_menu")])
+    await query.message.edit_text("Выбери тип:", reply_markup=InlineKeyboardMarkup(keyboard))
 
 
 async def search_by_type(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -35,111 +136,141 @@ async def search_by_type(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     with get_session() as session:
         current_user = session.query(User).filter_by(telegram_id=user_id).first()
-
         if not current_user or not current_user.field:
             await query.message.edit_text("Сначала укажи свою область деятельности в профиле.")
             return
 
-        user_fields = {field.strip().lower() for field in current_user.field.split(",")}
+        user_fields = {f.strip().lower() for f in current_user.field.split(",")}
+        all_items = session.query(Item).options(joinedload(Item.creator)).filter(Item.type == enum_type).all()
 
-        all_items = session.query(Item).options(joinedload(Item.creator))\
-            .filter(Item.type == enum_type).all()
+        matched = [
+            item for item in all_items
+            if item.field and user_fields & {f.strip().lower() for f in item.field.split(",")}
+        ]
 
-        items = []
-        for item in all_items:
-            if item.field:
-                item_fields = {field.strip().lower() for field in item.field.split(",")}
-                if user_fields & item_fields:
-                    items.append(item)
-
-    if not items:
-        await query.message.edit_text("Ничего не найдено по твоей области.")
-        await query.message.reply_text(secondary_text, reply_markup=create_main_menu())
+    if not matched:
+        await query.message.edit_text("Ничего не найдено.")
         return
 
-    await query.message.delete()
+    context.user_data["item_results"] = matched
+    context.user_data["item_index"] = 0
+    await show_item(update, context)
 
-    for item in items:
-        username = f"@{item.creator.username}" if item.creator and item.creator.username else "Без имени"
-        text = (
-            f"📌 <b>{item.title}</b>\n\n"
-            f"- Описание: {item.description}\n\n"
-            f"- Область: {item.field or 'не указана'}\n"
-            f"- Создатель: {username}"
-        )
-        await context.bot.send_message(
-            chat_id=query.message.chat.id,
-            text=text,
-            parse_mode="HTML"
-        )
+
+async def show_item(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    chat_id = query.message.chat.id if query else update.effective_chat.id
+
+    index = context.user_data.get("item_index", 0)
+    items = context.user_data.get("item_results", [])
+    item = items[index]
+
+    text = get_item_text(item)
+    if query:
+        await query.message.delete()
 
     await context.bot.send_message(
-        chat_id=query.message.chat.id,
-        text=secondary_text,
-        reply_markup=create_main_menu()
+        chat_id=chat_id,
+        text=text,
+        parse_mode="HTML",
+        reply_markup=get_navigation_keyboard("item")
     )
 
-async def search_people(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+# -------- Обработка лайков/навигации -------- #
+
+async def handle_navigation(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
+    data = query.data
 
-    current_user_id = query.from_user.id
-    with get_session() as session:
-        current_user = session.query(User).filter_by(telegram_id=current_user_id).first()
-        if not current_user or not current_user.field:
-            await query.message.edit_text("Сначала укажи свою область деятельности в профиле.")
-            return
+    if data == "back_to_menu":
+        await query.message.delete()
+        await query.message.reply_text(welcome_text, reply_markup=create_main_menu())
+        return ConversationHandler.END
 
-        user_fields = {field.strip().lower() for field in current_user.field.split(",")}
+    async def notify_end():
+        try:
+            await query.message.edit_text("Ты просмотрел всех.")
+        except:
+            await context.bot.send_message(chat_id=query.from_user.id, text="Ты просмотрел всех.")
 
-        all_users = session.query(User).filter(
-            User.telegram_id != current_user_id,
-            (User.skills != None) | (User.about != None)
-        ).all()
+    if data.startswith("user_"):
+        results = context.user_data.get("user_results", [])
+        index = context.user_data.get("user_index", 0)
+        update_index = lambda i: context.user_data.update({"user_index": i})
+        show_func = show_user
 
-        matched_users = []
-        for user in all_users:
-            if user.field:
-                user_fields_set = {f.strip().lower() for f in user.field.split(",")}
-                if user_fields & user_fields_set:
-                    matched_users.append(user)
+        if data == "user_like":
+            user = results[index]
+            try:
+                await context.bot.send_message(
+                    chat_id=user.telegram_id,
+                    text=f"💌 @{query.from_user.username} заинтересовался твоим профилем!"
+                )
+            except:
+                pass
 
-    if not matched_users:
-        await query.message.edit_text("Никто не найден.")
-        await query.message.reply_text(secondary_text, reply_markup=create_main_menu())
-        return
+            await context.bot.send_message(
+                chat_id=query.from_user.id,
+                text=f"❤️ Ты лайкнул @{user.username}!"
+            )
 
-    await query.message.delete()
+            index += 1
 
-    for user in matched_users:
-        text = (
-            f"@{user.username}\n"
-            f"Область: {user.field or 'не указана'}\n"
-            f"Навыки: {user.skills or 'не указаны'}\n"
-            f"О себе: {user.about or 'не заполнено'}\n"
-            f"GitHub: {user.github or 'не указан'}"
-        )
-        if user.photo_file_id:
-            await context.bot.send_photo(
-                chat_id=query.message.chat.id,
-                photo=user.photo_file_id,
-                caption=text,
+        elif data in ["user_skip", "user_next"]:
+            index += 1
+        elif data == "user_prev":
+            index -= 1
+
+        if 0 <= index < len(results):
+            update_index(index)
+            await show_func(update, context)
+        else:
+            await notify_end()
+
+    elif data.startswith("item_"):
+        results = context.user_data.get("item_results", [])
+        index = context.user_data.get("item_index", 0)
+        update_index = lambda i: context.user_data.update({"item_index": i})
+        show_func = show_item
+
+        if data == "item_like":
+            item = results[index]
+            try:
+                await context.bot.send_message(
+                    chat_id=item.creator.telegram_id,
+                    text=f"💌 @{query.from_user.username} заинтересовался твоей вакансией: <b>{item.title}</b>",
+                    parse_mode="HTML"
+                )
+            except:
+                pass
+
+            await context.bot.send_message(
+                chat_id=query.from_user.id,
+                text=f"❤️ Ты лайкнул вакансию <b>{item.title}</b>!",
                 parse_mode="HTML"
             )
+
+            index += 1
+
+        elif data in ["item_skip", "item_next"]:
+            index += 1
+        elif data == "item_prev":
+            index -= 1
+
+        if 0 <= index < len(results):
+            update_index(index)
+            await show_func(update, context)
         else:
-            await context.bot.send_message(
-                chat_id=query.message.chat.id,
-                text=text
-            )
+            await notify_end()
 
-    await context.bot.send_message(
-        chat_id=query.message.chat.id,
-        text=secondary_text,
-        reply_markup=create_main_menu()
-    )
 
+# -------- Регистрация хендлеров -------- #
 
 def register_handlers(application):
     application.add_handler(CallbackQueryHandler(search_item, pattern="search_item"))
-    application.add_handler(CallbackQueryHandler(search_by_type, pattern="search_(project|hackathon|task|case_championship|olymp)"))
+    application.add_handler(CallbackQueryHandler(search_by_type, pattern=r"search_(project|hackathon|task|case_championship|olymp)"))
     application.add_handler(CallbackQueryHandler(search_people, pattern="search_people"))
+    application.add_handler(CallbackQueryHandler(handle_navigation, pattern=r"^(user|item)_(like|skip|next|prev)$"))
+    application.add_handler(CallbackQueryHandler(handle_navigation, pattern="back_to_menu"))

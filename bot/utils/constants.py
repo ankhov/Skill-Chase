@@ -6,12 +6,13 @@ MAIN_MENU = {
 }
 
 ITEM_TYPES = {
-    "project": "Проект",
-    "hackathon": "Хакатон",
-    "task": "Задача",
-    "case_championship": "Кейс-чемпионат",
-    "olymp": "Олимпиада"
+    "project": "📂 Проект",
+    "hackathon": "🚀 Хакатон",
+    "task": "🧩 Задача",
+    "case_championship": "🏆 Кейс-чемпионат",
+    "olymp": "🎓 Олимпиада"
 }
+
 
 welcome_text = (
     "Привет! 👋\n"
@@ -20,5 +21,5 @@ welcome_text = (
 )
 
 secondary_text = (
-    "Что вы хотите сделать? "
+    "Что вы хотите сделать? 🤔"
 )
