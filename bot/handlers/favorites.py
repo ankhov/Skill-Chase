@@ -43,6 +43,14 @@ def get_fav_keyboard(prefix, index) -> InlineKeyboardMarkup:
     ])
 
 
+def get_back_to_menu_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("🏠 В меню", callback_data="back_to_menu")
+        ]
+    ])
+
+
 # ---------- Просмотр избранного ---------- #
 
 async def show_favorite_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -55,7 +63,10 @@ async def show_favorite_users(update: Update, context: ContextTypes.DEFAULT_TYPE
         favorites = [f.favorite_user for f in user.favorite_users]
 
     if not favorites:
-        await query.message.edit_text("У тебя нет избранных пользователей.")
+        await query.message.edit_text(
+            "У тебя нет избранных пользователей.",
+            reply_markup=get_back_to_menu_keyboard()
+        )
         return
 
     context.user_data["fav_users"] = favorites
@@ -69,7 +80,10 @@ async def display_fav_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     favorites = context.user_data.get("fav_users", [])
 
     if not favorites:
-        await query.message.edit_text("Список пуст.")
+        await query.message.edit_text(
+            "Список пуст.",
+            reply_markup=get_back_to_menu_keyboard()
+        )
         return
 
     user = favorites[index]
@@ -110,7 +124,10 @@ async def show_favorite_items(update: Update, context: ContextTypes.DEFAULT_TYPE
         items = [f.item for f in favorites]
 
     if not items:
-        await query.message.edit_text("У тебя нет избранных айтемов.")
+        await query.message.edit_text(
+            "У тебя нет избранных айтемов.",
+            reply_markup=get_back_to_menu_keyboard()
+        )
         return
 
     context.user_data["fav_items"] = items
@@ -124,7 +141,10 @@ async def display_fav_item(update: Update, context: ContextTypes.DEFAULT_TYPE):
     favorites = context.user_data.get("fav_items", [])
 
     if not favorites:
-        await query.message.edit_text("Список пуст.")
+        await query.message.edit_text(
+            "Список пуст.",
+            reply_markup=get_back_to_menu_keyboard()
+        )
         return
 
     item = favorites[index]
@@ -157,7 +177,11 @@ async def handle_fav_navigation(update: Update, context: ContextTypes.DEFAULT_TY
 
     if data == "back_to_menu":
         await query.message.delete()
-        await query.message.reply_text(welcome_text, reply_markup=create_main_menu())
+        await context.bot.send_message(
+            chat_id=query.message.chat.id,
+            text=welcome_text,
+            reply_markup=create_main_menu()
+        )
         return
 
     if data.startswith("favuser_"):
@@ -182,7 +206,12 @@ async def handle_fav_navigation(update: Update, context: ContextTypes.DEFAULT_TY
                 context.user_data["fav_users_index"] = min(index, len(context.user_data["fav_users"]) - 1)
                 await display_fav_user(update, context)
             else:
-                await query.message.edit_text("Список избранных пользователей пуст.")
+                await query.message.delete()
+                await context.bot.send_message(
+                    chat_id=query.message.chat.id,
+                    text="Список избранных пользователей пуст.",
+                    reply_markup=get_back_to_menu_keyboard()
+                )
 
     elif data.startswith("favitem_"):
         if "_prev" in data:
@@ -206,7 +235,12 @@ async def handle_fav_navigation(update: Update, context: ContextTypes.DEFAULT_TY
                 context.user_data["fav_items_index"] = min(index, len(context.user_data["fav_items"]) - 1)
                 await display_fav_item(update, context)
             else:
-                await query.message.edit_text("Список избранных айтемов пуст.")
+                await query.message.delete()
+                await context.bot.send_message(
+                    chat_id=query.message.chat.id,
+                    text="Список избранных айтемов пуст.",
+                    reply_markup=get_back_to_menu_keyboard()
+                )
 
 
 def register_favorites_handlers(application):
