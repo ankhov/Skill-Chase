@@ -6,7 +6,7 @@ from telegram.ext import ContextTypes, CallbackQueryHandler, ConversationHandler
 from bot.database.models import User
 from bot.database.db import get_session
 from bot.utils.constants import welcome_text, secondary_text
-from bot.utils.helpers import create_main_menu
+from bot.utils.helpers import create_main_menu, back_to_main_menu
 
 SKILLS, ABOUT, REPO, FIELD, PHOTO = range(5)
 
@@ -33,7 +33,7 @@ async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton("📝 Изменить информацию о себе", callback_data="edit_about")],
         [InlineKeyboardButton("🔗 Изменить Git", callback_data="edit_repo")],
         [InlineKeyboardButton("🖼️ Изменить аватар", callback_data="edit_photo")],
-        [InlineKeyboardButton("🔙 В меню", callback_data="back")]
+        [InlineKeyboardButton("🏠 В меню", callback_data="back_to_menu")]
     ]
 
 
@@ -287,9 +287,3 @@ def register_handlers(application):
     application.add_handler(conv_handler)
     application.add_handler(CallbackQueryHandler(back_to_main_menu, pattern="back"))
 
-
-async def back_to_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    await query.message.reply_text(secondary_text, reply_markup=create_main_menu())
-    return ConversationHandler.END

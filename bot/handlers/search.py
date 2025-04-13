@@ -19,7 +19,7 @@ def get_user_text(user: User) -> str:
         f"🌍 Область: {user.field or 'не указана'}\n"
         f"🧠 Навыки: {user.skills or 'не указаны'}\n"
         f"📝 О себе: {user.about or 'не заполнено'}\n"
-        f"🔗 GitHub: {user.github or 'не указан'}"
+        f"🔗 Git: {user.github or 'не указан'}"
     )
 
 
