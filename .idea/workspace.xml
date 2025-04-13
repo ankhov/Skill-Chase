@@ -6,11 +6,8 @@
   <component name="ChangeListManager">
     <list default="true" id="4ef9ea72-0baa-4c74-beed-99a24309c785" name="Changes" comment="Добавлена библиотека для проверки валидации в окружение">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/bot/handlers/create.py" beforeDir="false" afterPath="$PROJECT_DIR$/bot/handlers/create.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/bot/handlers/profile.py" beforeDir="false" afterPath="$PROJECT_DIR$/bot/handlers/profile.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/bot/handlers/search.py" beforeDir="false" afterPath="$PROJECT_DIR$/bot/handlers/search.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/bot/handlers/start.py" beforeDir="false" afterPath="$PROJECT_DIR$/bot/handlers/start.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/bot/utils/constants.py" beforeDir="false" afterPath="$PROJECT_DIR$/bot/utils/constants.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
