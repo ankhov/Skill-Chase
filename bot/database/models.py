@@ -1,8 +1,8 @@
+import enum
+
 from sqlalchemy import Column, Integer, String, Text, Enum, ForeignKey, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
-
-import enum
 
 Base = declarative_base()
 

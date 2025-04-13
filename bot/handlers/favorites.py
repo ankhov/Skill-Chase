@@ -1,11 +1,12 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, CallbackQueryHandler
+
 from sqlalchemy.orm import joinedload
 
 from bot.database.db import get_session
 from bot.database.models import User, FavoriteUser, FavoriteItem, Item
 from bot.utils.helpers import create_main_menu
-from bot.utils.constants import welcome_text
+from bot.utils.constants import WELCOME_TEXT
 
 
 def get_user_text(user: User) -> str:
@@ -180,7 +181,7 @@ async def handle_fav_navigation(update: Update, context: ContextTypes.DEFAULT_TY
         await query.message.delete()
         await context.bot.send_message(
             chat_id=query.message.chat.id,
-            text=welcome_text,
+            text=WELCOME_TEXT,
             reply_markup=create_main_menu()
         )
         return

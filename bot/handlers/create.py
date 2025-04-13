@@ -1,7 +1,7 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, CallbackQueryHandler, ConversationHandler, MessageHandler, filters
 
-from bot.utils.constants import ITEM_TYPES, welcome_text
+from bot.utils.constants import ITEM_TYPES
 from bot.database.models import Item, ItemType, User
 from bot.database.db import get_session
 from bot.utils.helpers import create_main_menu

@@ -7,7 +7,8 @@ from sqlalchemy.orm import joinedload
 
 from bot.database.models import User, Item, ItemType, FavoriteUser, FavoriteItem
 from bot.database.db import get_session
-from bot.utils.constants import ITEM_TYPES, MAIN_MENU, welcome_text
+
+from bot.utils.constants import ITEM_TYPES, WELCOME_TEXT
 from bot.utils.helpers import create_main_menu
 
 
@@ -186,7 +187,7 @@ async def handle_navigation(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if data == "back_to_menu":
         await query.message.delete()
-        await query.message.reply_text(welcome_text, reply_markup=create_main_menu())
+        await query.message.reply_text(WELCOME_TEXT, reply_markup=create_main_menu())
         return ConversationHandler.END
 
     async def notify_end():

@@ -1,10 +1,11 @@
+from config import BOT_TOKEN
+
 from telegram.ext import Application, CallbackQueryHandler
 
 from bot.handlers import start, search, create, profile, favorites
 from bot.handlers.my_vacancies import my_vacancies, delete_vacancy
-from bot.utils.helpers import back_to_main_menu
 
-from config import BOT_TOKEN
+from bot.utils.helpers import back_to_main_menu
 
 def main():
     print("Бот запущен...")

@@ -5,7 +5,18 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="4ef9ea72-0baa-4c74-beed-99a24309c785" name="Changes" comment="удаление вакансий при просмотре">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/bot/database/db.py" beforeDir="false" afterPath="$PROJECT_DIR$/bot/database/db.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/bot/database/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/bot/database/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/bot/handlers/create.py" beforeDir="false" afterPath="$PROJECT_DIR$/bot/handlers/create.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/bot/handlers/favorites.py" beforeDir="false" afterPath="$PROJECT_DIR$/bot/handlers/favorites.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/bot/handlers/my_vacancies.py" beforeDir="false" afterPath="$PROJECT_DIR$/bot/handlers/my_vacancies.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/bot/handlers/profile.py" beforeDir="false" afterPath="$PROJECT_DIR$/bot/handlers/profile.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/bot/handlers/search.py" beforeDir="false" afterPath="$PROJECT_DIR$/bot/handlers/search.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/bot/handlers/start.py" beforeDir="false" afterPath="$PROJECT_DIR$/bot/handlers/start.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/bot/utils/constants.py" beforeDir="false" afterPath="$PROJECT_DIR$/bot/utils/constants.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/bot/utils/helpers.py" beforeDir="false" afterPath="$PROJECT_DIR$/bot/utils/helpers.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/config.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

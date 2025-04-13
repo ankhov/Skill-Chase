@@ -1,11 +1,11 @@
-import re
 import aiohttp
+
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, CallbackQueryHandler, ConversationHandler, MessageHandler, filters
 
 from bot.database.models import User
 from bot.database.db import get_session
-from bot.utils.constants import welcome_text, secondary_text
+
 from bot.utils.helpers import create_main_menu, back_to_main_menu
 
 SKILLS, ABOUT, REPO, FIELD, PHOTO = range(5)

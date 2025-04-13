@@ -1,8 +1,9 @@
 from telegram import Update
 from telegram.ext import ContextTypes, CommandHandler
 
-from bot.utils.constants import welcome_text
+from bot.utils.constants import WELCOME_TEXT
 from bot.utils.helpers import create_main_menu
+
 from bot.database.models import User
 from bot.database.db import get_session
 
@@ -16,7 +17,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             session.add(db_user)
             session.commit()
 
-    await update.message.reply_text(welcome_text, reply_markup=create_main_menu())
+    await update.message.reply_text(WELCOME_TEXT, reply_markup=create_main_menu())
 
 
 
