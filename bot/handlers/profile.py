@@ -272,7 +272,7 @@ def register_handlers(application):
             CallbackQueryHandler(edit_skills, pattern="edit_skills"),
             CallbackQueryHandler(edit_field, pattern="edit_field"),
             CallbackQueryHandler(edit_about, pattern="edit_about"),
-            CallbackQueryHandler(edit_repo, pattern="edit_github"),
+            CallbackQueryHandler(edit_repo, pattern="edit_repo"),
             CallbackQueryHandler(edit_photo, pattern="edit_photo")
         ],
         states={
