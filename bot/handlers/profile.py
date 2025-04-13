@@ -1,4 +1,3 @@
-import re
 import aiohttp
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, CallbackQueryHandler, ConversationHandler, MessageHandler, filters
@@ -8,7 +7,7 @@ from bot.database.db import get_session
 from bot.utils.constants import welcome_text, secondary_text
 from bot.utils.helpers import create_main_menu
 
-SKILLS, ABOUT, GITHUB, FIELD, PHOTO = range(5)
+SKILLS, ABOUT, REPO, FIELD, PHOTO = range(5)
 
 
 async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -24,14 +23,14 @@ async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"- Навыки: {db_user.skills or 'Не указаны'}\n\n"
         f"- Область деятельности: {db_user.field or 'Не указана'}\n\n"
         f"- О себе: {db_user.about or 'Не заполнено'}\n\n"
-        f"- GitHub: {db_user.github or 'Не указан'}"
+        f"- Репозиторий: {db_user.github or 'Не указан'}"
     )
 
     keyboard = [
         [InlineKeyboardButton("Изменить навыки", callback_data="edit_skills")],
         [InlineKeyboardButton("Изменить область", callback_data="edit_field")],
         [InlineKeyboardButton("Изменить информацию о себе", callback_data="edit_about")],
-        [InlineKeyboardButton("Изменить GitHub", callback_data="edit_github")],
+        [InlineKeyboardButton("Изменить репозиторий", callback_data="edit_repo")],
         [InlineKeyboardButton("Изменить аватар", callback_data="edit_photo")],
         [InlineKeyboardButton("Назад", callback_data="back")]
     ]
@@ -77,7 +76,7 @@ async def edit_about(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ABOUT
 
 
-async def edit_github(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def edit_repo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.callback_query.answer()
     await update.callback_query.message.delete()
 
@@ -86,9 +85,11 @@ async def edit_github(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = session.query(User).filter_by(telegram_id=user_id).first()
         current = user.github or "не указан"
 
-    msg = await update.effective_chat.send_message(f"Введи GitHub (текущий: <i>{current}</i>):", parse_mode="HTML")
+    msg = await update.effective_chat.send_message(
+        f"Введи ссылку на GitHub или GitLab (текущая: <i>{current}</i>):", parse_mode="HTML"
+    )
     context.user_data["edit_prompt_msg_id"] = msg.message_id
-    return GITHUB
+    return REPO
 
 
 async def edit_field(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -164,36 +165,84 @@ async def save_about(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 
-async def save_github(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def save_repo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         await update.message.chat.delete_message(context.user_data.get("edit_prompt_msg_id"))
     except:
         pass
     await update.message.delete()
 
-    github = update.message.text.strip()
-    if not re.match(r"^https://(www\.)?github\.com/[A-Za-z0-9_-]+/?$", github):
-        await update.message.chat.send_message("❌ Некорректная ссылка. Пример: https://github.com/username")
-        return GITHUB
+    repo_url = update.message.text.strip()
 
-    # Извлекаем имя пользователя из URL
-    username = github.rstrip("/").split("/")[-1]
+    # Проверяем, что URL начинается с https://
+    if not repo_url.startswith("https://"):
+        await update.message.chat.send_message(
+            "❌ Ссылка должна начинаться с https://. Примеры: https://github.com/username, https://gitlab.com/username"
+        )
+        return REPO
 
-    # Проверка существования пользователя через GitHub API
+    # Извлекаем домен и имя пользователя
+    try:
+        parts = repo_url.rstrip("/").split("/")
+        if len(parts) < 4:
+            raise ValueError
+        domain = parts[2]  # Например, github.com, gitlab.com, gitlab.informatics.ru
+        username = parts[3]  # Имя пользователя
+    except (IndexError, ValueError):
+        await update.message.chat.send_message(
+            "❌ Некорректный формат ссылки. Примеры: https://github.com/username, https://gitlab.com/username"
+        )
+        return REPO
+
+    # Проверка через API
     async with aiohttp.ClientSession() as session:
-        async with session.get(f"https://api.github.com/users/{username}") as response:
-            if response.status != 200:
-                await update.message.chat.send_message("❌ Пользователь не найден на GitHub.")
-                return GITHUB
+        try:
+            if "github.com" in domain:
+                # Проверка GitHub
+                async with session.get(f"https://api.github.com/users/{username}") as response:
+                    if response.status != 200:
+                        await update.message.chat.send_message("❌ Пользователь не найден на GitHub.")
+                        return REPO
+            elif "gitlab" in domain.lower():
+                # Проверка GitLab
+                if domain == "gitlab.com" or domain == "www.gitlab.com":
+                    async with session.get(f"https://gitlab.com/api/v4/users?username={username}") as response:
+                        if response.status != 200 or not await response.json():
+                            await update.message.chat.send_message("❌ Пользователь не найден на GitLab.")
+                            return REPO
+                else:
+                    # Для кастомных GitLab-доменов пробуем получить страницу профиля
+                    async with session.get(f"{repo_url.rstrip('/')}", headers={"Accept": "text/html"}) as response:
+                        if response.status != 200:
+                            await update.message.chat.send_message(
+                                f"❌ Пользователь не найден на {domain}."
+                            )
+                            return REPO
+                        # Проверяем, что страница не возвращает ошибку (например, 404 в теле ответа)
+                        content = await response.text()
+                        if "404" in content or "Not Found" in content:
+                            await update.message.chat.send_message(
+                                f"❌ Пользователь не найден на {domain}."
+                            )
+                            return REPO
+            else:
+                await update.message.chat.send_message(
+                    "❌ Ссылка должна быть на GitHub или GitLab. Примеры: https://github.com/username, https://gitlab.com/username"
+                )
+                return REPO
+        except aiohttp.ClientError:
+            await update.message.chat.send_message("❌ Ошибка проверки. Попробуй позже.")
+            return REPO
 
     user = update.effective_user
     with get_session() as session:
         db_user = session.query(User).filter_by(telegram_id=user.id).first()
-        db_user.github = github
+        db_user.github = repo_url  # Поле остаётся github для совместимости
         session.commit()
 
-    await update.message.chat.send_message("✅ GitHub обновлён!", reply_markup=create_main_menu())
+    await update.message.chat.send_message("✅ Репозиторий обновлён!", reply_markup=create_main_menu())
     return ConversationHandler.END
+
 
 async def save_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
@@ -226,14 +275,14 @@ def register_handlers(application):
             CallbackQueryHandler(edit_skills, pattern="edit_skills"),
             CallbackQueryHandler(edit_field, pattern="edit_field"),
             CallbackQueryHandler(edit_about, pattern="edit_about"),
-            CallbackQueryHandler(edit_github, pattern="edit_github"),
+            CallbackQueryHandler(edit_repo, pattern="edit_repo"),
             CallbackQueryHandler(edit_photo, pattern="edit_photo")
         ],
         states={
             SKILLS: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_skills)],
             FIELD: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_field)],
             ABOUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_about)],
-            GITHUB: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_github)],
+            REPO: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_repo)],
             PHOTO: [MessageHandler(filters.PHOTO, save_photo)]
         },
         fallbacks=[]
