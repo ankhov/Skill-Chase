@@ -1,9 +1,9 @@
 from telegram.ext import Application, CallbackQueryHandler
 
 from bot.handlers.profile import back_to_main_menu
-from config import BOT_TOKEN
 from bot.handlers import start, search, create, profile
 
+from config import BOT_TOKEN
 
 def main():
     print("Бот запущен...")

@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Text, Enum, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
+
 import enum
 
 Base = declarative_base()
@@ -21,6 +22,7 @@ class User(Base):
     about = Column(Text, nullable=True)
     github = Column(String, nullable=True)
     field = Column(String, nullable=True)
+    photo_file_id = Column(String, nullable=True)
 
 class Item(Base):
     __tablename__ = "items"

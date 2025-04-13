@@ -1,7 +1,8 @@
 from sqlalchemy.orm import joinedload
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, CallbackQueryHandler
-from bot.utils.constants import ITEM_TYPES
+
+from bot.utils.constants import ITEM_TYPES, welcome_text, secondary_text
 from bot.database.models import Item, User, ItemType
 from bot.database.db import get_session
 from bot.utils.helpers import create_main_menu
@@ -18,6 +19,7 @@ async def search_item(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.message.edit_text(
         "Выбери тип:", reply_markup=InlineKeyboardMarkup(keyboard)
     )
+
 
 async def search_by_type(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -38,21 +40,21 @@ async def search_by_type(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.message.edit_text("Сначала укажи свою область деятельности в профиле.")
             return
 
-        # Преобразуем строку областей пользователя в список (например: "AI, ML, Robotics")
-        user_fields = [field.strip().lower() for field in current_user.field.split(",")]
+        user_fields = {field.strip().lower() for field in current_user.field.split(",")}
 
-        # Загружаем все элементы нужного типа
         all_items = session.query(Item).options(joinedload(Item.creator))\
             .filter(Item.type == enum_type).all()
 
-        # Оставляем только те, где область элемента входит в список областей пользователя
-        items = [
-            item for item in all_items
-            if item.field and item.field.strip().lower() in user_fields
-        ]
+        items = []
+        for item in all_items:
+            if item.field:
+                item_fields = {field.strip().lower() for field in item.field.split(",")}
+                if user_fields & item_fields:
+                    items.append(item)
 
     if not items:
-        await query.message.edit_text("Ничего не найдено по твоей области.", reply_markup=create_main_menu())
+        await query.message.edit_text("Ничего не найдено по твоей области.")
+        await query.message.reply_text(secondary_text, reply_markup=create_main_menu())
         return
 
     await query.message.delete()
@@ -63,7 +65,7 @@ async def search_by_type(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"📌 <b>{item.title}</b>\n\n"
             f"- Описание: {item.description}\n\n"
             f"- Область: {item.field or 'не указана'}\n"
-            f"-  Создатель: {username}"
+            f"- Создатель: {username}"
         )
         await context.bot.send_message(
             chat_id=query.message.chat.id,
@@ -71,15 +73,9 @@ async def search_by_type(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode="HTML"
         )
 
-    welcome_text = (
-        f"Привет, {query.from_user.first_name}! 👋\n"
-        "Я бот для поиска проектов, хакатонов, задач и людей для совместной работы.\n"
-        "Что хочешь сделать?"
-    )
-
     await context.bot.send_message(
         chat_id=query.message.chat.id,
-        text=welcome_text,
+        text=secondary_text,
         reply_markup=create_main_menu()
     )
 
@@ -94,16 +90,13 @@ async def search_people(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.message.edit_text("Сначала укажи свою область деятельности в профиле.")
             return
 
-        # Области текущего пользователя
         user_fields = {field.strip().lower() for field in current_user.field.split(",")}
 
-        # Загружаем всех других пользователей
         all_users = session.query(User).filter(
             User.telegram_id != current_user_id,
             (User.skills != None) | (User.about != None)
         ).all()
 
-        # Фильтрация по пересечению областей
         matched_users = []
         for user in all_users:
             if user.field:
@@ -113,6 +106,7 @@ async def search_people(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if not matched_users:
         await query.message.edit_text("Никто не найден.")
+        await query.message.reply_text(secondary_text, reply_markup=create_main_menu())
         return
 
     await query.message.delete()
@@ -125,20 +119,22 @@ async def search_people(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"О себе: {user.about or 'не заполнено'}\n"
             f"GitHub: {user.github or 'не указан'}"
         )
-        await context.bot.send_message(
-            chat_id=query.message.chat.id,
-            text=text
-        )
-
-    welcome_text = (
-        f"Привет, {query.from_user.first_name}! 👋\n"
-        "Я бот для поиска проектов, хакатонов, задач и людей для совместной работы.\n"
-        "Что хочешь сделать?"
-    )
+        if user.photo_file_id:
+            await context.bot.send_photo(
+                chat_id=query.message.chat.id,
+                photo=user.photo_file_id,
+                caption=text,
+                parse_mode="HTML"
+            )
+        else:
+            await context.bot.send_message(
+                chat_id=query.message.chat.id,
+                text=text
+            )
 
     await context.bot.send_message(
         chat_id=query.message.chat.id,
-        text=welcome_text,
+        text=secondary_text,
         reply_markup=create_main_menu()
     )
 
