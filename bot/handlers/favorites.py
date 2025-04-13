@@ -22,6 +22,7 @@ def get_item_text(item) -> str:
     creator = f"@{item.creator.username}" if item.creator and item.creator.username else "Без имени"
     return (
         f"📌 {item.title}\n"
+        f"💰 Призовой: {item.prize}\n"
         f"📝 Описание: {item.description}\n"
         f"🌍 Область: {item.field or 'не указана'}\n"
         f"👤 Создатель: {creator}"

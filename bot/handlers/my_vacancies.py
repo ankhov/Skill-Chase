@@ -30,7 +30,9 @@ async def my_vacancies(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.message.delete()
 
     for item in items:
-        text = f"📌 <b>{item.title}</b>\n{item.description[:100]}..."
+        text = (f"📌 <b>{item.title}</b>\n"
+                f"💰 Призовой: <i>{item.prize}</i>\n "
+                f"📝 Описание: {item.description[:100]}...")
         await query.message.chat.send_message(
             text=text,
             parse_mode="HTML"

@@ -6,7 +6,7 @@ from bot.database.models import Item, ItemType, User
 from bot.database.db import get_session
 from bot.utils.helpers import create_main_menu
 
-TITLE, DESCRIPTION, TYPE, FIELD = range(4)
+TITLE, PRIZE, DESCRIPTION, TYPE, FIELD = range(5)
 
 
 async def create_item(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -34,9 +34,13 @@ async def set_type(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def set_title(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["title"] = update.message.text
+    await update.message.reply_text("Введи призовой:")
+    return PRIZE
+
+async def set_prize(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data["prize"] = update.message.text
     await update.message.reply_text("Введи описание:")
     return DESCRIPTION
-
 
 async def set_description(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["description"] = update.message.text
@@ -50,6 +54,7 @@ async def set_field(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["field"] = field
 
     title = context.user_data["title"]
+    prize = context.user_data["prize"]
     description = context.user_data["description"]
     item_type = context.user_data["type"]
 
@@ -58,6 +63,7 @@ async def set_field(update: Update, context: ContextTypes.DEFAULT_TYPE):
         new_item = Item(
             type=ItemType[item_type.upper()],
             title=title,
+            prize=prize,
             description=description,
             field=field,
             creator_id=db_user.id
@@ -79,6 +85,7 @@ def register_handlers(application):
         states={
             TYPE: [CallbackQueryHandler(set_type, pattern="type_(project|hackathon|task|case_championship|olymp)")],
             TITLE: [MessageHandler(filters.TEXT & ~filters.COMMAND, set_title)],
+            PRIZE: [MessageHandler(filters.TEXT & ~filters.COMMAND, set_prize)],
             DESCRIPTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, set_description)],
             FIELD: [MessageHandler(filters.TEXT & ~filters.COMMAND, set_field)],
         },

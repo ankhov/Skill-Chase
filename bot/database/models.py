@@ -38,6 +38,7 @@ class Item(Base):
     id = Column(Integer, primary_key=True)
     type = Column(Enum(ItemType), nullable=False)
     title = Column(String, nullable=False)
+    prize = Column(Text, nullable=True)
     description = Column(Text, nullable=True)
     field = Column(String, nullable=True)
     creator_id = Column(Integer, ForeignKey("users.id"), nullable=False)
