@@ -17,6 +17,7 @@ async def create_item(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton(text, callback_data=f"type_{key}")]
         for key, text in ITEM_TYPES.items()
     ]
+    keyboard.append([InlineKeyboardButton("🏠 В меню", callback_data="back_to_menu")])
     await query.message.edit_text(
         "Выбери тип:", reply_markup=InlineKeyboardMarkup(keyboard)
     )

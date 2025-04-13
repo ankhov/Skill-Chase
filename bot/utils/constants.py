@@ -2,6 +2,7 @@ MAIN_MENU = {
     "search_item": "🔍 Найти вакансию",
     "search_people": "👥 Найти людей",
     "create_item": "➕ Создать вакансию",
+    "my_vacancies": "📂 Мои вакансии",
     "profile": "👤 Мой профиль"
 }
 

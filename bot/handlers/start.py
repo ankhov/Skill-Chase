@@ -19,5 +19,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(welcome_text, reply_markup=create_main_menu())
 
 
+
+
 def register_handlers(application):
     application.add_handler(CommandHandler("start", start))
