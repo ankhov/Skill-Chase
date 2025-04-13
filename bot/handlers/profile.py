@@ -1,5 +1,5 @@
 import re
-
+import aiohttp
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, CallbackQueryHandler, ConversationHandler, MessageHandler, filters
 
@@ -176,6 +176,16 @@ async def save_github(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.chat.send_message("❌ Некорректная ссылка. Пример: https://github.com/username")
         return GITHUB
 
+    # Извлекаем имя пользователя из URL
+    username = github.rstrip("/").split("/")[-1]
+
+    # Проверка существования пользователя через GitHub API
+    async with aiohttp.ClientSession() as session:
+        async with session.get(f"https://api.github.com/users/{username}") as response:
+            if response.status != 200:
+                await update.message.chat.send_message("❌ Пользователь не найден на GitHub.")
+                return GITHUB
+
     user = update.effective_user
     with get_session() as session:
         db_user = session.query(User).filter_by(telegram_id=user.id).first()
@@ -184,7 +194,6 @@ async def save_github(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.chat.send_message("✅ GitHub обновлён!", reply_markup=create_main_menu())
     return ConversationHandler.END
-
 
 async def save_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
