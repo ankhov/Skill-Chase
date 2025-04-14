@@ -53,8 +53,6 @@ def get_back_to_menu_keyboard() -> InlineKeyboardMarkup:
     ])
 
 
-# ---------- Просмотр избранного ---------- #
-
 async def show_favorite_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -161,8 +159,6 @@ async def display_fav_item(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=get_fav_keyboard("favitem", index)
     )
 
-
-# ---------- Навигация и удаление ---------- #
 
 async def handle_fav_navigation(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query

@@ -49,8 +49,6 @@ def get_navigation_keyboard(prefix: str) -> InlineKeyboardMarkup:
     ])
 
 
-# -------- Поиск пользователей -------- #
-
 async def search_people(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -74,7 +72,17 @@ async def search_people(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ]
 
     if not matched:
-        await query.message.edit_text("Никто не найден.")
+        markup = InlineKeyboardMarkup([
+            [InlineKeyboardButton("🏠 В меню", callback_data="back_to_menu")]
+        ])
+        try:
+            await query.message.edit_text("Никто не найден по вашей области.", reply_markup=markup)
+        except:
+            await context.bot.send_message(
+                chat_id=query.from_user.id,
+                text="Никто не найден по вашей области.",
+                reply_markup=markup
+            )
         return
 
     context.user_data["user_results"] = matched
@@ -109,8 +117,6 @@ async def show_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=get_navigation_keyboard("user")
         )
 
-
-# -------- Поиск айтемов -------- #
 
 async def search_item(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -150,7 +156,17 @@ async def search_by_type(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ]
 
     if not matched:
-        await query.message.edit_text("Ничего не найдено.")
+        markup = InlineKeyboardMarkup([
+            [InlineKeyboardButton("🏠 В меню", callback_data="back_to_menu")]
+        ])
+        try:
+            await query.message.edit_text("Ничего не найдено по вашей области.", reply_markup=markup)
+        except:
+            await context.bot.send_message(
+                chat_id=query.from_user.id,
+                text="Ничего не найдено по вашей области.",
+                reply_markup=markup
+            )
         return
 
     context.user_data["item_results"] = matched
@@ -177,8 +193,6 @@ async def show_item(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=get_navigation_keyboard("item")
     )
 
-
-# -------- Обработка навигации и лайков -------- #
 
 async def handle_navigation(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
